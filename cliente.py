@@ -1,42 +1,66 @@
 import socket   
 import threading
+from tkinter import scrolledtext
+from ttkbootstrap import Entry
+from ttkbootstrap.constants import *
 
 
-def receive_messages():
-    while True:
+
+class Cliente:
+    def __init__(self, username: str, text_area: scrolledtext.ScrolledText):
+        self.username = username
+        self.host = socket.gethostbyname(socket.gethostname())
+
+        self.port = 55555
+
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            mss = client.recv(1024).decode('utf-8')
+            self.client.connect((self.host, self.port))
+        except Exception as e:
+            print(f"Error: {str(e)}")
 
-            if mss == "username":
-                client.send(username.encode("utf-8"))
-            else:
-                print(mss)
-        except:
-            print("No se pudo")
-            client.close()
-            break
+            if isinstance(e, socket.error):
+                print(f"Error code: {e.errno}")
+
+        receive_thread = threading.Thread(target=self.receive_messages, args=(text_area,))
+        receive_thread.start()
 
 
-def write_messages():
-    while True:
-        try:
-            mss = f"{username}: {input('')}"
-            client.send(mss.encode('utf-8'))
-        except:
-            break
+
+    def receive_messages(self, text_area: scrolledtext.ScrolledText):
+        while True:  
+            try:
+                mss = self.client.recv(1024).decode('utf-8')
+
+                if mss == "username":
+                    self.client.send(self.username.encode("utf-8"))
+                else:
+                    if mss.strip():
+                        text_area.config(state='normal')
+                        text_area.insert(END, str(mss))
+                        text_area.config(state='disabled')
+            except Exception as e:
+                print(f"No se pudo: {e}")
+                self.client.close()
+                break
+
+
+
+    def write_messages(self, entry_message: Entry, text_area: scrolledtext.ScrolledText):
+
+        message = entry_message.get()
+
+        if message.strip():
+            text_area.config(state='normal')
+            text_area.insert(END, f"You: {message}\n")
+            text_area.config(state='disabled')
+
+            entry_message.delete(0, END)
+
+        mss = f"{self.username}: {message}\n"
+        self.client.send(mss.encode('utf-8'))
+
 
 
 if __name__ == '__main__':
-    username = input("Ingresa tu usuario: ")
-
-    host = '192.168.3.95'
-    port = 55555
-
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((host, port))  # todo try exit
-
-    receive_thread = threading.Thread(target=receive_messages)
-    receive_thread.start()
-
-    write_thread = threading.Thread(target=write_messages)
-    write_thread.start()
+    cliente = Cliente()

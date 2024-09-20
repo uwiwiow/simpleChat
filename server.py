@@ -2,58 +2,62 @@ import socket
 import threading
 
 
-def broadcast(mss, cc):
-    for client in clients:
-        if client != cc:
-            client.send(mss)  # todo try
+class Server:
+    def __init__(self):
+        self.host = socket.gethostbyname(socket.gethostname())
+        self.port = 55555
+
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.server.bind((self.host, self.port))  # todo try exit
+        self.server.listen()
+        print(f"Si sirve... {self.host}:{self.port}")
+
+        self.clients = []
+        self.usernames = []
 
 
-def handle_messages(client):
-    while True:
-        try:
-            mss = client.recv(1024)
-            broadcast(mss, client)
-        except:
-            index = clients.index(client)
-            username = usernames[index]
-            broadcast(f"ChatBot: {username} se desconecto".encode('utf-8'), client)
-            clients.remove(client)
-            usernames.remove(username)
-            client.close()
-            break
+    def broadcast(self, mss, cc):
+        for client in self.clients:
+            if client != cc:
+                client.send(mss)  # todo try
 
 
-def receive_connections():
-    while True:
-        client, address = server.accept()  # todo try
+    def handle_messages(self, client):
+        while True:
+            try:
+                mss = client.recv(1024)
+                self.broadcast(mss, client)
+            except:
+                index = self.clients.index(client)
+                username = self.usernames[index]
+                self.broadcast(f"ChatBot: {username} se desconecto".encode('utf-8'), client)
+                self.clients.remove(client)
+                self.usernames.remove(username)
+                client.close()
+                break
 
-        client.send("username".encode("utf-8"))
-        username = client.recv(1024).decode('utf-8')
 
-        clients.append(client)
-        usernames.append(username)
+    def receive_connections(self):
+        while True:
+            client, address = self.server.accept()  # todo try
 
-        print(f"{username} conectado desde {str(address)}")
+            client.send("username".encode("utf-8"))
+            username = client.recv(1024).decode('utf-8')
 
-        mss = f"ChatBot: {username} si se pudo unir".encode("utf-8")
-        broadcast(mss, client)
-        client.send("Conectado :)".encode("utf-8"))
+            self.clients.append(client)
+            self.usernames.append(username)
 
-        thread = threading.Thread(target=handle_messages, args=(client,))
-        thread.start()
+            print(f"{username} conectado desde {str(address)}")
+
+            mss = f"ChatBot: {username} si se pudo unir".encode("utf-8")
+            self.broadcast(mss, client)
+            client.send("Conectado :)\n".encode("utf-8"))
+
+            thread = threading.Thread(target=self.handle_messages, args=(client,))
+            thread.start()
 
 
 if __name__ == '__main__':
-    host = '0.0.0.0'
-    port = 55555
-
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    server.bind((host, port))  # todo try exit
-    server.listen()
-    print(f"Si sirve... {host}:{port}")
-
-    clients = []
-    usernames = []
-
-    receive_connections()
+    server = Server()
+    server.receive_connections()
