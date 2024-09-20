@@ -9,7 +9,7 @@ class Server:
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self.server.bind((self.host, self.port))  # todo try exit
+        self.server.bind((self.host, self.port))
         self.server.listen()
         print(f"Si sirve... {self.host}:{self.port}")
 
@@ -20,7 +20,7 @@ class Server:
     def broadcast(self, mss, cc):
         for client in self.clients:
             if client != cc:
-                client.send(mss)  # todo try
+                client.send(mss)
 
 
     def handle_messages(self, client):
@@ -31,7 +31,7 @@ class Server:
             except:
                 index = self.clients.index(client)
                 username = self.usernames[index]
-                self.broadcast(f"ChatBot: {username} se desconecto".encode('utf-8'), client)
+                self.broadcast(f"ChatBot: {username} se desconecto\n".encode('utf-8'), client)
                 self.clients.remove(client)
                 self.usernames.remove(username)
                 client.close()
@@ -40,7 +40,7 @@ class Server:
 
     def receive_connections(self):
         while True:
-            client, address = self.server.accept()  # todo try
+            client, address = self.server.accept()
 
             client.send("username".encode("utf-8"))
             username = client.recv(1024).decode('utf-8')
@@ -50,7 +50,7 @@ class Server:
 
             print(f"{username} conectado desde {str(address)}")
 
-            mss = f"ChatBot: {username} si se pudo unir".encode("utf-8")
+            mss = f"ChatBot: {username} si se pudo unir\n".encode("utf-8")
             self.broadcast(mss, client)
             client.send("Conectado :)\n".encode("utf-8"))
 
